@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VTMT</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .button-row {
+            display: flex;
+            justify-content: space-between;
+        }
+        .button-row button {
+            width: 48%;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        .spinner {
+            display: none;
+            width: 30px;
+            height: 30px;
+            border: 4px solid #ccc;
+            border-top: 4px solid #28a745;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        #statusLog {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            height: 200px;
+            overflow-y: auto;
+        }
+        .map-container {
+            height: 300px;
+            margin-top: 20px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <h1>VTMT</h1>
+    <form id="satelliteForm">
+        <label for="voicemessage">Voice Message:</label>
+        <input type="file" id="voicemessage" name="voicemessage" accept="audio/*" required>
+        
+        <label for="targetDate">Target Date:</label>
+        <input type="date" id="targetDate" name="targetDate" required>
+        
+        <label for="targetTime">Target Time:</label>
+        <input type="time" id="targetTime" name="targetTime" required>
+        
+        <label for="targetLocation">Target Location:</label>
+        <input type="text" id="targetLocation" name="targetLocation" placeholder="Select from the map..." required readonly>
+        
+        <div class="button-row">
+            <button type="button" onclick="getCurrentLocation()">Get Current Location</button>
+            <button type="submit">Send Voice Message</button>
+        </div>
+    </form>
+
+    <div class="spinner" id="spinner"></div>
+    <div class="error" id="errorMessage"></div>
+    <div id="statusLog"></div>
+    <div id="map" class="map-container"></div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content" id="modalContent"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        class Satellite {
+            async sendVoiceMessageToLocation(voicemessage, targetDate, targetTime, targetLocation) {
+                const statusLog = document.getElementById('statusLog');
+                statusLog.innerHTML = ''; 
+
+                try {
+                    this.updateStatus("Initializing satellite communication...", statusLog);
+                    await this.simulateAsyncProcess();
+                    this.updateStatus(`Processing voice message for ${targetLocation} on ${targetDate} at ${targetTime}.`, statusLog);
+
+                    await this.simulateAsyncProcess();
+                    this.updateStatus("Satellite has locked onto the target location.", statusLog);
+
+                    await this.simulateAsyncProcess();
+                    this.updateStatus(`Sending voice message to ${targetLocation}...`, statusLog);
+
+                    await this.simulateAsyncProcess();
+                    this.updateStatus(`Voice message successfully delivered to ${targetLocation}.`, statusLog);
+                    this.showModal("Success", "Voice message has been sent successfully!");
+                } catch (error) {
+                    this.updateStatus("Error during sending process.", statusLog);
+                    this.showModal("Error", "An error occurred during the sending process.");
+                }
+            }
+
+            updateStatus(message, logContainer) {
+                const time = new Date().toLocaleTimeString();
+                logContainer.innerHTML += `<p>[${time}] ${message}</p>`;
+            }
+
+            async simulateAsyncProcess() {
+                return new Promise(resolve => setTimeout(resolve, 2000));
+            }
+
+            showModal(title, message) {
+                const modal = document.getElementById('modal');
+                const modalContent = document.getElementById('modalContent');
+                modalContent.innerHTML = `<h2>${title}</h2><p>${message}</p><button onclick="closeModal()">OK</button>`;
+                modal.style.display = 'flex';
+            }
+        }
+
+        const satellite = new Satellite();
+
+        document.getElementById("satelliteForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const voicemessage = document.getElementById("voicemessage").files[0];
+            const targetDate = document.getElementById("targetDate").value;
+            const targetTime = document.getElementById("targetTime").value;
+            const targetLocation = document.getElementById("targetLocation").value;
+            const errorMessage = document.getElementById("errorMessage");
+            const spinner = document.getElementById("spinner");
+
+            if (!voicemessage || !targetDate || !targetTime || !targetLocation) {
+                errorMessage.textContent = "All fields are required.";
+                return;
+            }
+
+            errorMessage.textContent = "";
+            spinner.style.display = 'block';
+
+            try {
+                await satellite.sendVoiceMessageToLocation(voicemessage.name, targetDate, targetTime, targetLocation);
+            } catch (error) {
+                errorMessage.textContent = "Failed to send voice message. Please try again.";
+            } finally {
+                spinner.style.display = 'none';
+            }
+        });
+
+        const map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+
+        let marker;
+
+        function updateMap(lat, lon) {
+            map.setView([lat, lon], 13);
+            if (marker) map.removeLayer(marker);
+            marker = L.marker([lat, lon]).addTo(map).bindPopup(`Location: ${lat}, ${lon}`).openPopup();
+        }
+
+        map.on('click', function(e) {
+            document.getElementById("targetLocation").value = `Lat: ${e.latlng.lat}, Lon: ${e.latlng.lng}`;
+            updateMap(e.latlng.lat, e.latlng.lng);
+        });
+
+        function getCurrentLocation() {
+            navigator.geolocation.getCurrentPosition(pos => updateMap(pos.coords.latitude, pos.coords.longitude));
+        }
+
+        function closeModal() { document.getElementById('modal').style.display = 'none'; }
+    </script>
+</body>
+</html>
+
